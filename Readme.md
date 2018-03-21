@@ -8,6 +8,21 @@ SQL-Stats is a personal project to assist me in learning statistics. I have chos
 * Allow the code to be used in different contexts and on different data / content / tables
 * Provide Examples and the formulas for each of the procedures.
 
+## Procedures
+### Current
+* BoxAndWhisker_Partitioned
+* GeneralStats_Partitioned
+* KmeanCluster_Partitioned
+* Pareto_Partitioned
+
+### Planned
+* ConstrainedApportion_Partitioned (Apportion out data based on a total available) 
+* Update GeneralStats_Partitioned with additional statistics such as (Regression Line)
+* Moving Average Forecast
+* Weighted Moving Average Forecast
+* Linear Predictor Forecast (Using Regression) 
+* Seasonal With Trend Forecast (Using Regression and Average Seasonal Index) 
+
 ## License
 Copyright (c) 2018, Ryan Julyan.
 
