@@ -1,10 +1,18 @@
-IF EXISTS(SELECT 1 FROM sys.tables WHERE object_id = OBJECT_ID('ExampleData'))
+USE <SQL_DataBase_Name,dbname, database_name>
+GO
+
+IF EXISTS(SELECT 1 
+		   FROM sys.tables T
+           INNER JOIN sys.schemas S
+				ON S.schema_id = T.schema_id 
+			WHERE  T.name = 'ExampleData'
+                AND s.name = '<SQL_DataBase_Schema,schemaname, schema_name>')
 BEGIN;
-    DROP TABLE [ExampleData];
+    DROP TABLE <SQL_DataBase_Schema,schemaname, schema_name>.[ExampleData];
 END;
 GO
 
-CREATE TABLE [ExampleData] (
+CREATE TABLE <SQL_DataBase_Schema,schemaname, schema_name>.[ExampleData] (
     [ExampleDataID] INTEGER NOT NULL IDENTITY(1, 1),
     [EP_ItemID] INTEGER NULL,
     [EP_ItemCode] VARCHAR(255) NULL,
@@ -33,3 +41,4 @@ EXEC <SQL_DataBase_Schema,schemaname, schema_name>.BoxAndWhisker_Partitioned
 ,@PartionGroupField = 'Grouping'
 ,@TableName = 'ExampleData'
 ,@TopX = 'TOP 1000'
+GO

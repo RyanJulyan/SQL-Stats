@@ -3,7 +3,7 @@ The procedure BoxAndWhisker_Partitioned is a procedure that will process a set o
 
 This will return both the Continuous and Discrete values for the `Box And Whisker`.
 
-Each Partition will be evaluated as a group of data. This can be a composite key allowing for more flexibility in the groupings for evaluations, including Dates and aggregated Dates. Than means that if I have 3 different groupings, the Box And Whisker data will be the same for the 3 different groupings
+Each Partition will be evaluated as a group of data. The Partition can be passed as a composite key in your provided dataset, allowing for more flexibility to know what information to group together to evaluate and run the calculations against, including Dates and aggregated Dates. That means that if you provide 3 different groupings in your dataset, the Box And Whisker data will be the same for each Grouping respectively across the 3 different groupings (where each grouping would have a different set of distinct results).
 
 Inputs:
 * ExternalID (Provided ID field from inputs, this will be pulled from the specified table)
@@ -37,23 +37,30 @@ Open `BoxAndWhisker_Partitioned.sql` in SQL Management Studio. Press the buttons
 
 Fill in the details for:
 * database_name (The Database you intend to use this on)
-* schema_name (The Schema you intend to use this function on, allowing you to integrate this into other projects.)
+* schema_name (The Schema you intend to use this function on, allowing you to integrate this into other projects)
 
 ## Simple Example
-to run the example first press the buttons `ctrl`+`shift`+`M-Key`.
+If you are using the example file provided in the Example Folder first press the buttons `ctrl`+`shift`+`M-Key`.
 
 Fill in the details for:
-* schema_name (The Schema you intend to use this function on, allowing you to integrate this into other projects.)
+* database_name (The Database you intend to use this on)
+* schema_name (The Schema you intend to use this function on, allowing you to integrate this into other projects)
 
 Run the Example:
 ```SQL
-IF EXISTS(SELECT 1 FROM sys.tables WHERE object_id = OBJECT_ID('ExampleData'))
+
+IF EXISTS(SELECT 1 
+		   FROM sys.tables T
+           INNER JOIN sys.schemas S
+				ON S.schema_id = T.schema_id 
+			WHERE  T.name = 'ExampleData'
+                AND s.name = 'dbo')
 BEGIN;
-    DROP TABLE [ExampleData];
+    DROP TABLE dbo.[ExampleData];
 END;
 GO
 
-CREATE TABLE [ExampleData] (
+CREATE TABLE dbo.[ExampleData] (
     [ExampleDataID] INTEGER NOT NULL IDENTITY(1, 1),
     [EP_ItemID] INTEGER NULL,
     [EP_ItemCode] VARCHAR(255) NULL,
@@ -75,13 +82,14 @@ INSERT INTO ExampleData([EP_ItemID],[EP_ItemCode],[Quantity],[Grouping]) VALUES(
 INSERT INTO ExampleData([EP_ItemID],[EP_ItemCode],[Quantity],[Grouping]) VALUES(1090,'6608',679,2),(1091,'6917',385,2),(1092,'9931',48,2),(1093,'7295',546,1),(1094,'5349',878,1),(1095,'5974',586,3),(1096,'7213',67,2),(1097,'5446',760,1),(1098,'9730',242,3),(1099,'5458',864,1);
 
 
-EXEC <SQL_DataBase_Schema,schemaname, schema_name>.BoxAndWhisker_Partitioned
+EXEC dbo.BoxAndWhisker_Partitioned
  @ExternalIDField = 'EP_ItemID'
 ,@ExternalCodeField = 'EP_ItemCode'
 ,@ValueField = 'Quantity'
 ,@PartionGroupField = 'Grouping'
 ,@TableName = 'ExampleData'
-,@TopX = 'TOP 1000'
+,@TopX = 'TOP 100'
+GO
 ```
 
 Output:

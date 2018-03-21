@@ -2,6 +2,9 @@ ALTER DATABASE <SQL_DataBase_Name,dbname, database_name>
 SET COMPATIBILITY_LEVEL = 110; 
 GO
 
+USE <SQL_DataBase_Name,dbname, database_name>
+GO
+
 SET ANSI_NULLS, ANSI_PADDING, ANSI_WARNINGS, QUOTED_IDENTIFIER ON;
 GO
 IF NOT EXISTS ( SELECT *
@@ -18,12 +21,12 @@ IF NOT EXISTS ( SELECT *
 GO
 ALTER PROCEDURE <SQL_DataBase_Schema,schemaname, schema_name>.BoxAndWhisker_Partitioned(
 --DECLARE
-	 @ExternalIDField	NVARCHAR(MAX)
-	,@ExternalCodeField	NVARCHAR(MAX)
-	,@ValueField		NVARCHAR(MAX)
-	,@PartionGroupField	NVARCHAR(MAX)
-	,@TableName			NVARCHAR(MAX)
-	,@TopX				NVARCHAR(MAX) = ''
+	 @ExternalIDField	NVARCHAR(128) 
+	,@ExternalCodeField	NVARCHAR(128)
+	,@ValueField		NVARCHAR(128)
+	,@PartionGroupField	NVARCHAR(128)
+	,@TableName			NVARCHAR(128)
+	,@TopX				NVARCHAR(128) = ''
 )
 AS
 BEGIN
@@ -34,11 +37,11 @@ BEGIN
 		DROP TABLE #Values;
 
 	CREATE TABLE #Values(
-		 ID					BIGINT IDENTITY(1,1) PRIMARY KEY
-		,ExternalID			BIGINT
-		,ExternalCode		NVARCHAR(MAX)
-		,Value				FLOAT
-		,PartionGroup		NVARCHAR(MAX)
+		 ID					BIGINT IDENTITY(1,1) PRIMARY KEY NOT NULL
+		,ExternalID			BIGINT NOT NULL
+		,ExternalCode		VARCHAR(8000) NOT NULL
+		,Value				FLOAT NOT NULL
+		,PartionGroup		VARCHAR(8000) NOT NULL
 		);
 		
 		SET @SQL = '
@@ -59,6 +62,9 @@ BEGIN
 				)
 
 		EXEC sp_ExecuteSQL @SQL
+
+		CREATE NONCLUSTERED INDEX IX_#Values_PartionGroup ON #Values(PartionGroup);
+		CREATE NONCLUSTERED INDEX IX_#Values_Value		 ON #Values(Value);
 
 	SELECT 
 		 V.ID		
