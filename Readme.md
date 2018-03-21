@@ -6,6 +6,7 @@ SQL-Stats is a personal project to assist me in learning statistics. I have chos
 * Help others learn statistics.
 * Create simple to use, robust code
 * Allow the code to be used in different contexts and on different data / content / tables
+* Provide Examples and the formulas for each of the procedures.
 
 ## License
 Copyright (c) 2018, Ryan Julyan.
