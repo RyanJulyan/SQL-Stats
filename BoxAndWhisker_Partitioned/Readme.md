@@ -1,21 +1,51 @@
 # BoxAndWhisker_Partitioned
-The procedure BoxAndWhisker_Partitioned is a procedure that will process a set of data to allow it to be used in a Box And Whisker chart.
+The procedure BoxAndWhisker_Partitioned is a procedure that will process a set of data to allow it to be used in a `Box And Whisker chart`.
 
-This will return both the Continuous and Discreet values for the Box And Whisker.
+This will return both the Continuous and Discrete values for the `Box And Whisker`.
 
-Each Partition will be evaluated as a group of data. This can be a composite key allowing for more flexibility in the groupings for evaluations, including Dates and aggregated Dates
+Each Partition will be evaluated as a group of data. This can be a composite key allowing for more flexibility in the groupings for evaluations, including Dates and aggregated Dates. Than means that if I have 3 different groupings, the Box And Whisker data will be the same for the 3 different groupings
+
+Inputs:
+* ExternalID (Provided ID field from inputs, this will be pulled from the specified table)
+* ExternalCode (Provided Code field from inputs, this will be pulled from the specified table)
+* Value (Provided Value field from inputs, this will be pulled from the specified table. This is the Value used for calculations)
+* PartionGroup (Provided Grouping/Partition field from inputs, this will be pulled from the specified table. This is the Range or Grouping of Values used for calculations)
+
+Outputs:
+* ID (Unique Identifier Created each run)
+* ExternalID (Provided ID field from inputs, this will be pulled from the specified table)
+* ExternalCode (Provided Code field from inputs, this will be pulled from the specified table)
+* Value (Provided Value field from inputs, this will be pulled from the specified table. This is the Value used for calculations)
+* PartionGroup (Provided Grouping/Partition field from inputs, this will be pulled from the specified table. This is the Range or Grouping of Values used for calculations)
+* AVG_Value (Calculated AVERAGE VALUE per PartionGroup)
+* STDEV_Value (Calculated STANDARD DEVIATION OF VALUES per PartionGroup)
+* MIN_Value (Calculated MINIMUM VALUE per PartionGroup)
+* Q1_Cont (Calculated Continuous FIRST QUARTER OF VALUES per PartionGroup)
+* Median_Cont (Calculated Continuous MEDIAN per PartionGroup)
+* Q3_Cont (Calculated Continuous THIRD QUARTER OF VALUES per PartionGroup)
+* IQR_Cont (Calculated Continuous INTER-QUARTILE RANGE per PartionGroup)
+* QCoeffDisp_Cont (Calculated Continuous QUARTILE COEFFICIENT OF DISPERSION per PartionGroup)
+* Q1_Disc (Calculated Discrete FIRST QUARTER OF VALUES per PartionGroup)
+* Median_Disc (Calculated Discrete MEDIAN per PartionGroup)
+* Q3_Disc (Calculated Discrete THIRD QUARTER OF VALUES per PartionGroup)
+* IQR_Disc (Calculated Discrete INTER-QUARTILE RANGE per PartionGroup)
+* QCoeffDisp_Disc(Calculated Discrete QUARTILE COEFFICIENT OF DISPERSION per PartionGroup)
+* MAX_Value(Calculated MAXIMUM VALUE per PartionGroup)
+
 ## Instructions to Install
 Open `BoxAndWhisker_Partitioned.sql` in SQL Management Studio. Press the buttons `ctrl`+`shift`+`M-Key`.
 
 Fill in the details for:
 * database_name (The Database you intend to use this on)
 * schema_name (The Schema you intend to use this function on, allowing you to integrate this into other projects.)
+
 ## Simple Example
 to run the example first press the buttons `ctrl`+`shift`+`M-Key`.
 
 Fill in the details for:
 * schema_name (The Schema you intend to use this function on, allowing you to integrate this into other projects.)
 
+Run the Example:
 ```SQL
 IF EXISTS(SELECT 1 FROM sys.tables WHERE object_id = OBJECT_ID('ExampleData'))
 BEGIN;
