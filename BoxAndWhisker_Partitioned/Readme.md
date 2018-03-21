@@ -8,16 +8,13 @@ Each Partition will be evaluated as a group of data. This can be a composite key
 Open `BoxAndWhisker_Partitioned.sql` in SQL Management Studio. Press the buttons `ctrl`+`shift`+`M-Key`.
 
 Fill in the details for:
-* database_name
-** The Database you intend to use this on
-* schema_name
-** The Schema you intend to use this function on, allowing you to integrate this into other projects.
+* database_name (The Database you intend to use this on)
+* schema_name (The Schema you intend to use this function on, allowing you to integrate this into other projects.)
 ## Simple Example
 to run the example first press the buttons `ctrl`+`shift`+`M-Key`.
 
 Fill in the details for:
-* schema_name
-** The Schema you intend to use this function on, allowing you to integrate this into other projects.
+* schema_name (The Schema you intend to use this function on, allowing you to integrate this into other projects.)
 
 ```SQL
 IF EXISTS(SELECT 1 FROM sys.tables WHERE object_id = OBJECT_ID('ExampleData'))
