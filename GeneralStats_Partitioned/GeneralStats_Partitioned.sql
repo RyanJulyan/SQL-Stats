@@ -2,6 +2,9 @@ ALTER DATABASE <SQL_DataBase_Name,dbname, database_name>
 SET COMPATIBILITY_LEVEL = 110; 
 GO
 
+USE <SQL_DataBase_Name,dbname, database_name>
+GO
+
 SET ANSI_NULLS, ANSI_PADDING, ANSI_WARNINGS, QUOTED_IDENTIFIER ON;
 GO
 IF NOT EXISTS ( SELECT *
@@ -18,13 +21,13 @@ IF NOT EXISTS ( SELECT *
 GO
 ALTER PROCEDURE <SQL_DataBase_Schema,schemaname, schema_name>.GeneralStats_Partitioned(
 --DECLARE
-	 @ExternalIDField		NVARCHAR(MAX)
-	,@ExternalCodeField		NVARCHAR(MAX)
-	,@ValueField			NVARCHAR(MAX)
-	,@IndependantValueField	NVARCHAR(MAX)
-	,@PartionGroupField		NVARCHAR(MAX)
-	,@TableName				NVARCHAR(MAX)
-	,@TopX					NVARCHAR(MAX) = ''
+	 @ExternalIDField		NVARCHAR(128)
+	,@ExternalCodeField		NVARCHAR(128)
+	,@ValueField			NVARCHAR(128)
+	,@IndependantValueField	NVARCHAR(128)
+	,@PartionGroupField		NVARCHAR(128)
+	,@TableName				NVARCHAR(128)
+	,@TopX					NVARCHAR(128) = ''
 	,@ErrorPercentage		FLOAT		  = 0.05
 )
 AS
@@ -38,10 +41,10 @@ BEGIN
 	CREATE TABLE #Values(
 		 ID					BIGINT IDENTITY(1,1) PRIMARY KEY
 		,ExternalID			BIGINT
-		,ExternalCode		NVARCHAR(MAX)
+		,ExternalCode		VARCHAR(8000)
 		,Value				FLOAT
 		,IndependantValue	FLOAT
-		,PartionGroup		NVARCHAR(MAX)
+		,PartionGroup		VARCHAR(900)
 		);
 		
 		SET @SQL = '
@@ -64,11 +67,17 @@ BEGIN
 				)
 		EXEC sp_ExecuteSQL @SQL
 
+		CREATE NONCLUSTERED INDEX IX_#Values_PartionGroup ON #Values(PartionGroup);
+		CREATE NONCLUSTERED INDEX IX_#Values_Value ON #Values(Value);
+		CREATE NONCLUSTERED INDEX IX_#Values_IndependantValue ON #Values(IndependantValue);
+
+
 	SELECT 
 		 V.ID		
 		,V.ExternalID
 		,V.ExternalCode
 		,V.Value
+		,V.IndependantValue
 		,V.PartionGroup
 		,COUNT(V.Value) OVER (PARTITION BY V.PartionGroup) AS COUNT_Value
 		,SUM(V.Value) OVER (PARTITION BY V.PartionGroup) AS SUM_Value

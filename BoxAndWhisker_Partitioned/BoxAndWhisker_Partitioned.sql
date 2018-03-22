@@ -41,7 +41,7 @@ BEGIN
 		,ExternalID			BIGINT NOT NULL
 		,ExternalCode		VARCHAR(8000) NOT NULL
 		,Value				FLOAT NOT NULL
-		,PartionGroup		VARCHAR(8000) NOT NULL
+		,PartionGroup		VARCHAR(900) NOT NULL
 		);
 		
 		SET @SQL = '
@@ -64,7 +64,7 @@ BEGIN
 		EXEC sp_ExecuteSQL @SQL
 
 		CREATE NONCLUSTERED INDEX IX_#Values_PartionGroup ON #Values(PartionGroup);
-		CREATE NONCLUSTERED INDEX IX_#Values_Value		 ON #Values(Value);
+		CREATE NONCLUSTERED INDEX IX_#Values_Value ON #Values(Value);
 
 	SELECT 
 		 V.ID		

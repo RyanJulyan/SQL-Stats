@@ -7,9 +7,9 @@ IF EXISTS(SELECT 1
 				ON S.schema_id = T.schema_id 
 			WHERE  T.name = 'ExampleData'
                 AND s.name = '<SQL_DataBase_Schema,schemaname, schema_name>')
-BEGIN;
+BEGIN
     DROP TABLE <SQL_DataBase_Schema,schemaname, schema_name>.[ExampleData];
-END;
+END
 GO
 
 CREATE TABLE <SQL_DataBase_Schema,schemaname, schema_name>.[ExampleData] (
