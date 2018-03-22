@@ -211,6 +211,11 @@ ID                   ExternalID           ExternalCode   Value                  
 58                   1057                 9700           968                    43081                  3             34          17216                  506.352941176471       265.637584319705       29                     469.5                  455                    992                    34                     1453273                42743.3235294118       210.815404041385       42381                  42728.5                      42728                        43081                  -0.215073531144377     -0.170686740292842     0.029133963311796      32           0.975                  1.60176374266251       -0.170764493095316
 
 ```
+## Equations
+###Slope
+[http://www.statisticshowto.com/how-to-find-a-linear-regression-slope/]
+b = ((n*SUM(X*Y)) - (SUM(X)*SUM(Y))) / ((n*SUM(POWER(X,2)))-(POWER(SUM(X),2)))
+
 ## License
 Copyright (c) 2018, Ryan Julyan.
 
