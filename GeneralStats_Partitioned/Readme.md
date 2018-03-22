@@ -212,9 +212,11 @@ ID                   ExternalID           ExternalCode   Value                  
 
 ```
 ## Equations
-###Slope
-[http://www.statisticshowto.com/how-to-find-a-linear-regression-slope/]
+
+### Slope
 b = ((n*SUM(X*Y)) - (SUM(X)*SUM(Y))) / ((n*SUM(POWER(X,2)))-(POWER(SUM(X),2)))
+
+Ref: http://www.statisticshowto.com/how-to-find-a-linear-regression-slope/
 
 ## License
 Copyright (c) 2018, Ryan Julyan.
