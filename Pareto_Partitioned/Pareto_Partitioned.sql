@@ -1,7 +1,10 @@
-ALTER DATABASE <SQL_DataBase_Name,dbname, database_name>   
-SET COMPATIBILITY_LEVEL = 110; 
-GO
 
+IF ((SELECT compatibility_level  
+FROM sys.databases WHERE name = '<SQL_DataBase_Name,dbname, database_name>') < 110)
+BEGIN
+	ALTER DATABASE <SQL_DataBase_Name,dbname, database_name>   
+	SET COMPATIBILITY_LEVEL = 110; 
+END
 SET ANSI_NULLS, ANSI_PADDING, ANSI_WARNINGS, QUOTED_IDENTIFIER ON;
 GO
 IF NOT EXISTS ( SELECT *
@@ -102,17 +105,17 @@ BEGIN
 	CREATE TABLE #Values(
 		 ID					BIGINT IDENTITY(1,1) PRIMARY KEY
 		,ExternalID			BIGINT
-		,ExternalCode		NVARCHAR(MAX)
+		,ExternalCode		VARCHAR(8000)
 		,Value				FLOAT
-		,PartionGroup		NVARCHAR(MAX)
+		,PartionGroup		VARCHAR(900)
 		);
 		
 		SET @SQL = '
 			SELECT '+@TopX+' 
 			 CONVERT(FLOAT,'+@ExternalIDField+')
-			,CONVERT(NVARCHAR(MAX),'+@ExternalCodeField+')
+			,CONVERT(VARCHAR(8000),'+@ExternalCodeField+')
 			,CONVERT(FLOAT,'+@ValueField+')
-			,CONVERT(NVARCHAR(MAX),'+@PartionGroupField+')
+			,CONVERT(VARCHAR(900),'+@PartionGroupField+')
 		FROM '+@TableName+';
 		';
 
@@ -124,6 +127,9 @@ BEGIN
 				  PartionGroup 
 				)
 		EXEC sp_ExecuteSQL @SQL
+
+		CREATE NONCLUSTERED INDEX IX_#Values_PartionGroup ON #Values(PartionGroup);
+		CREATE NONCLUSTERED INDEX IX_#Values_Value ON #Values(Value);
 		
 		
 	--DECLARE @NTILE INT = 3

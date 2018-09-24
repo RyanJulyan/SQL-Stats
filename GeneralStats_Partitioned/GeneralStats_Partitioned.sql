@@ -1,6 +1,10 @@
-ALTER DATABASE <SQL_DataBase_Name,dbname, database_name>   
-SET COMPATIBILITY_LEVEL = 110; 
-GO
+
+IF ((SELECT compatibility_level  
+FROM sys.databases WHERE name = '<SQL_DataBase_Name,dbname, database_name>') < 110)
+BEGIN
+	ALTER DATABASE <SQL_DataBase_Name,dbname, database_name>   
+	SET COMPATIBILITY_LEVEL = 110; 
+END
 
 USE <SQL_DataBase_Name,dbname, database_name>
 GO
@@ -50,10 +54,10 @@ BEGIN
 		SET @SQL = '
 			SELECT '+@TopX+' 
 			 CONVERT(FLOAT,'+@ExternalIDField+')
-			,CONVERT(NVARCHAR(MAX),'+@ExternalCodeField+')
+			,CONVERT(VARCHAR(8000),'+@ExternalCodeField+')
 			,CONVERT(FLOAT,'+@ValueField+')
 			,CONVERT(FLOAT,'+@IndependantValueField+')
-			,CONVERT(NVARCHAR(MAX),'+@PartionGroupField+')
+			,CONVERT(VARCHAR(900),'+@PartionGroupField+')
 		FROM '+@TableName+';
 		';
 
@@ -83,23 +87,28 @@ BEGIN
 		,SUM(V.Value) OVER (PARTITION BY V.PartionGroup) AS SUM_Value
 		,AVG(V.Value) OVER (PARTITION BY V.PartionGroup) AS AVG_Value
 		,STDEV(V.Value) OVER (PARTITION BY V.PartionGroup) AS STDEV_Value
+		,VAR(V.Value) OVER (PARTITION BY V.PartionGroup) AS VAR_Value
 		,MIN(V.Value) OVER (PARTITION BY V.PartionGroup) AS MIN_Value
 		,PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY V.Value) 
 			OVER (PARTITION BY V.PartionGroup) AS Median_Value_Cont
 		,PERCENTILE_DISC(0.50) WITHIN GROUP (ORDER BY V.Value) 
 			OVER (PARTITION BY V.PartionGroup) AS Median_Value_Disc
 		,MAX(V.Value) OVER (PARTITION BY V.PartionGroup) AS MAX_Value
+		,V.Value - AVG(V.Value) OVER (PARTITION BY V.PartionGroup) / STDEV(V.Value) OVER (PARTITION BY V.PartionGroup) AS STANDARDIZED_Value
 
 		,COUNT(V.IndependantValue) OVER (PARTITION BY V.PartionGroup) AS COUNT_IndependantValue
 		,SUM(V.IndependantValue) OVER (PARTITION BY V.PartionGroup) AS SUM_IndependantValue
 		,AVG(V.IndependantValue) OVER (PARTITION BY V.PartionGroup) AS AVG_IndependantValue
 		,STDEV(V.IndependantValue) OVER (PARTITION BY V.PartionGroup) AS STDEV_IndependantValue
+		,VAR(V.IndependantValue) OVER (PARTITION BY V.PartionGroup) AS VAR_IndependantValue
 		,MIN(V.IndependantValue) OVER (PARTITION BY V.PartionGroup) AS MIN_IndependantValue
 		,PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY V.IndependantValue) 
 			OVER (PARTITION BY V.PartionGroup) AS Median_IndependantValue_Cont
 		,PERCENTILE_DISC(0.50) WITHIN GROUP (ORDER BY V.IndependantValue) 
 			OVER (PARTITION BY V.PartionGroup) AS Median_IndependantValue_Disc
 		,MAX(V.IndependantValue) OVER (PARTITION BY V.PartionGroup) AS MAX_IndependantValue
+		,V.IndependantValue - AVG(V.IndependantValue) OVER (PARTITION BY V.PartionGroup) / STDEV(V.IndependantValue) OVER (PARTITION BY V.PartionGroup) AS STANDARDIZED_IndependantValue
+
 		,((COUNT(V.IndependantValue) OVER (PARTITION BY V.PartionGroup) * SUM(V.IndependantValue*V.Value) OVER (PARTITION BY V.PartionGroup) ) 
 			- (SUM(V.IndependantValue) OVER (PARTITION BY V.PartionGroup)*SUM(V.Value) OVER (PARTITION BY V.PartionGroup)) )
 		/
@@ -194,6 +203,26 @@ BEGIN
 		)
 		) 
 		AS t_value
+		,CASE WHEN V.Value > STDEV(V.Value) OVER (PARTITION BY V.PartionGroup) 
+			THEN 1
+			ELSE
+				0
+		END AS Above_STDEV_Value
+		,CASE WHEN V.IndependantValue > STDEV(V.IndependantValue) OVER (PARTITION BY V.PartionGroup) 
+			THEN 1
+			ELSE
+				0
+		END AS Above_STDEV_IndependantValue
+		,CASE WHEN V.Value > AVG(V.Value) OVER (PARTITION BY V.PartionGroup) 
+			THEN 1
+			ELSE
+				0
+		END AS Above_AVG_Value
+		,CASE WHEN V.IndependantValue > AVG(V.IndependantValue) OVER (PARTITION BY V.PartionGroup) 
+			THEN 1
+			ELSE
+				0
+		END AS Above_AVG_IndependantValue
 	FROM #Values V
 
 END

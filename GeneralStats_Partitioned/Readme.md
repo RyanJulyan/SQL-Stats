@@ -34,13 +34,13 @@ Outputs:
 * Median_IndependantValue_Cont (Calculated Continuous MEDIAN of all INDEPENDENT VALUES per PartionGroup)
 * Median_IndependantValue_Disc (Calculated Discrete MEDIAN of all INDEPENDENT VALUES per PartionGroup)
 * MAX_IndependantValue (Calculated MAXIMUM INDEPENDENT VALUE per PartionGroup)
-* Slope 
+* Slope (Calculated SLOPE of VALUEs based on INDEPENDENT VALUES per PartionGroup)
 * Pearson_R
 * Pearson_R_Sqrd
 * DegOfFreedom
 * ConfidenceLevel
 * CriticalValue
-* t_value
+* t_value (Calculated T-Score of VALUEs based on INDEPENDENT VALUES per PartionGroup)
 
 ## Instructions to Install
 Open `GeneralStats_Partitioned.sql` in SQL Management Studio. Press the buttons `ctrl`+`shift`+`M-Key`.
@@ -212,11 +212,53 @@ ID                   ExternalID           ExternalCode   Value                  
 
 ```
 ## Equations
-
+	
 ### Slope
-b = ((n*SUM(X*Y)) - (SUM(X)*SUM(Y))) / ((n*SUM(POWER(X,2)))-(POWER(SUM(X),2)))
+
+	1) Find the Slope
+		Equation:
+		b = ((n*SUM(X*Y)) - (SUM(X)*SUM(Y))) / ((n*SUM(POWER(X,2)))-(POWER(SUM(X),2)))
 
 Ref: http://www.statisticshowto.com/how-to-find-a-linear-regression-slope/
+
+### Pearson_R (Pearson’s Correlation Coefficient)
+	1) r = Correlation (is there relationship)
+	2) n = Number of Records
+		Equation:
+			r = ((n*(SUM(X*Y)))-((SUM(X)*SUM(Y)))) / (SQRT(((n*(SUM(POWER(X,2))))-(POWER(SUM(X),2)))*((n*(SUM(POWER(Y,2))))-(POWER(SUM(Y),2)))))
+	
+	3) r2 = r squared is estimate of how much a variable explains the dependant variable (is my sample Biased)
+		Equation:
+			r2 = POWER(r,2)
+
+Ref: http://www.statisticshowto.com/probability-and-statistics/correlation-coefficient-formula/
+
+### Degrees of freedom
+	1) n = Number of Records
+	2) df = Degrees of freedom		
+		Equation:
+			df = n - 2	
+
+### Standardization:
+	Standardize the data.
+	When done the following is true:
+		Mean = 0
+		Standard Deviation = 1
+	
+	Calculations:
+	For Population DataSet[Xi:n]	
+		1) Average DataSet
+			AVG([Xi:n])
+		2) Variance 
+			AVG((Xi-Ui)^2)
+		3) Standard Deviation
+			sqrt(AVG((Xi-Ui)^2))
+		4) Subtract Avg from each of the values DataSet of the DataSet[Xi:n]
+			Xi - AVG([Xi:n])
+		5) Devide each of the values DataSet of the DataSet[Xi:n] from Step 4 by the Standard Deviation
+			Xi - AVG([Xi:n]) / sqrt(AVG((Xi-Ui)^2))
+
+Ref: https://www.coursera.org/learn/analytics-excel/lecture/ci3c8/introduction-to-standardization
 
 ## License
 Copyright (c) 2018, Ryan Julyan.

@@ -196,6 +196,28 @@ ID                   ExternalID           ExternalCode       Value              
 14                   1013                 9335               964                    3             518.029411764706       305.239248965028       19                     233.75                 563.5                  766.5                  532.75                 1.89086069210293       231                    559                    772                    541                    1.93559928443649       990
 57                   1056                 5597               976                    3             518.029411764706       305.239248965028       19                     233.75                 563.5                  766.5                  532.75                 1.89086069210293       231                    559                    772                    541                    1.93559928443649       990
 ```
+
+## Equations
+
+### Interquartile Range
+	1) Find the median.
+	2) Find Q1(First Quartile) and Q3(Third Quartile).
+	3) Find the interquartile range
+		Subtract Q1(First Quartile) from Q3(Third Quartile).
+		Equation:
+			(Q3-Q1)
+
+Ref: http://www.statisticshowto.com/probability-and-statistics/interquartile-range/
+
+### Quartile Coefficient of Dispersion 
+
+	4) Find the Quartile Coefficient of dispersion 
+		Subtract Q1(First Quartile) from Q3(Third Quartile) to find the interquartile range and Divide that by the sum of the Q1(First Quartile) and Q3(Third Quartile) . 
+		Equation:
+			(Q3-Q1)/(Q3+Q1)
+
+Ref: https://sqlwithpanks.wordpress.com/2016/07/07/quartile-interquartile-rangeiqr-quartile-coefficient-of-dispersion-and-outliers-using-tsql/
+
 ## License
 Copyright (c) 2018, Ryan Julyan.
 

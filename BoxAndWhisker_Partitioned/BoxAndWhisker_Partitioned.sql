@@ -1,6 +1,10 @@
-ALTER DATABASE <SQL_DataBase_Name,dbname, database_name>   
-SET COMPATIBILITY_LEVEL = 110; 
-GO
+
+IF ((SELECT compatibility_level  
+FROM sys.databases WHERE name = '<SQL_DataBase_Name,dbname, database_name>') < 110)
+BEGIN
+	ALTER DATABASE <SQL_DataBase_Name,dbname, database_name>   
+	SET COMPATIBILITY_LEVEL = 110; 
+END
 
 USE <SQL_DataBase_Name,dbname, database_name>
 GO
@@ -47,9 +51,9 @@ BEGIN
 		SET @SQL = '
 			SELECT '+@TopX+' 
 			 CONVERT(FLOAT,'+@ExternalIDField+')
-			,CONVERT(NVARCHAR(MAX),'+@ExternalCodeField+')
+			,CONVERT(VARCHAR(8000),'+@ExternalCodeField+')
 			,CONVERT(FLOAT,'+@ValueField+')
-			,CONVERT(NVARCHAR(MAX),'+@PartionGroupField+')
+			,CONVERT(VARCHAR(900),'+@PartionGroupField+')
 		FROM '+@TableName+';
 		';
 
