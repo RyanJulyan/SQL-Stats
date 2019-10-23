@@ -73,7 +73,7 @@ BEGIN
 		,PercentageContribution										DECIMAL(38, 19) NOT NULL
 		,SuggestedNewContribution									DECIMAL(38, 19) NOT NULL
 		,ConstrainedSuggestedNewContribution						DECIMAL(38, 19)	NOT NULL
-		,AmountNeededTosubtractFromRoundingForAddingToContribution	DECIMAL(38, 19)	NOT NULL
+		--,AmountNeededTosubtractFromRoundingForAddingToContribution	DECIMAL(38, 19)	NOT NULL
 		,SuggestedNewContributionRoundedDownToRounding				DECIMAL(38, 19)	NOT NULL
 		,SuggestedNewContributionRoundedUpToRounding				DECIMAL(38, 19)	NOT NULL
 		,SuggestedNewContributionRoundedClosestToRounding			DECIMAL(38, 19)	NOT NULL
@@ -96,7 +96,7 @@ BEGIN
 		,PercentageContribution														DECIMAL(38, 19) NOT NULL
 		,SuggestedNewContribution													DECIMAL(38, 19) NOT NULL
 		,ConstrainedSuggestedNewContribution										DECIMAL(38, 19)	NOT NULL
-		,AmountNeededTosubtractFromRoundingForAddingToContribution					DECIMAL(38, 19)	NOT NULL
+		--,AmountNeededTosubtractFromRoundingForAddingToContribution					DECIMAL(38, 19)	NOT NULL
 		,SuggestedNewContributionRoundedDownToRounding								DECIMAL(38, 19)	NOT NULL
 		,SuggestedNewContributionRoundedUpToRounding								DECIMAL(38, 19)	NOT NULL
 		,SuggestedNewContributionRoundedClosestToRounding							DECIMAL(38, 19)	NOT NULL
@@ -275,7 +275,7 @@ BEGIN
 		          ,PercentageContribution
 		          ,SuggestedNewContribution
 		          ,ConstrainedSuggestedNewContribution
-		          ,AmountNeededTosubtractFromRoundingForAddingToContribution
+		          --,AmountNeededTosubtractFromRoundingForAddingToContribution
 		          ,SuggestedNewContributionRoundedDownToRounding
 		          ,SuggestedNewContributionRoundedUpToRounding
 		          ,SuggestedNewContributionRoundedClosestToRounding
@@ -299,7 +299,7 @@ BEGIN
 			,PercentageContribution
 			,SuggestedNewContribution
 			,ConstrainedSuggestedNewContribution
-			,AmountNeededTosubtractFromRoundingForAddingToContribution
+			--,AmountNeededTosubtractFromRoundingForAddingToContribution
 			,SuggestedNewContributionRoundedDownToRounding
 			,SuggestedNewContributionRoundedUpToRounding
 			,SuggestedNewContributionRoundedClosestToRounding
@@ -346,7 +346,7 @@ BEGIN
 			,ONCV.PercentageContribution
 			,ONCV.SuggestedNewContribution
 			,ONCV.ConstrainedSuggestedNewContribution
-			,ONCV.AmountNeededTosubtractFromRoundingForAddingToContribution
+			--,ONCV.AmountNeededTosubtractFromRoundingForAddingToContribution
 			,ONCV.SuggestedNewContributionRoundedDownToRounding
 			,ONCV.SuggestedNewContributionRoundedUpToRounding
 			,ONCV.SuggestedNewContributionRoundedClosestToRounding
