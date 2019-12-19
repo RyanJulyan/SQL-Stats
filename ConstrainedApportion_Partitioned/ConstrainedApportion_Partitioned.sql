@@ -28,18 +28,63 @@ ALTER PROCEDURE <SQL_DataBase_Schema,schemaname, schema_name>.ConstrainedApporti
 	,@MinValueField			NVARCHAR(128)
 	,@MaxValueField			NVARCHAR(128)
 	,@TotalAvailableField	NVARCHAR(128)
-	,@RoundingField			NVARCHAR(128)
+	,@OrderMultipleField	NVARCHAR(128)
 	,@PartionGroupField		NVARCHAR(128)
 	,@TableName				NVARCHAR(128)
 	,@TopX					NVARCHAR(128) = ''
 	,@bRoundUp				BIT = 0
-	,@bRoundDown			BIT = 0
+	,@bRoundDown			BIT = 1
 	,@bRoundClosest			BIT = 0
+	,@bSaveToTable			BIT = 1
+	,@bTruncateSaveTable	BIT = 1
 )
 AS
 BEGIN
 	
 	DECLARE @SQL NVARCHAR(MAX) = ''
+
+	IF(@bSaveToTable = 1)
+	BEGIN
+		IF NOT EXISTS ( SELECT *
+						FROM sys.objects o
+							INNER JOIN sys.schemas s
+									ON s.schema_id = o.schema_id
+						WHERE o.name = 'ConstrainedApportion_Partitioned_ROQ'
+							AND s.name = '<SQL_DataBase_Schema,schemaname, schema_name>'
+					) 
+		BEGIN
+			
+			CREATE TABLE <SQL_DataBase_Schema,schemaname, schema_name>.ConstrainedApportion_Partitioned_ROQ(
+				ID																						BIGINT PRIMARY KEY NOT NULL
+				,ExternalID																				BIGINT NOT NULL
+				,ExternalCode																			VARCHAR(8000) NOT NULL
+				,Value																					DECIMAL(38, 19) NOT NULL
+				,MinValue																				DECIMAL(38, 19) NOT NULL
+				,MaxValue																				DECIMAL(38, 19) NOT NULL
+				,TotalAvailable																			DECIMAL(38, 19) NOT NULL
+				,OrderMultiple																			DECIMAL(38, 19) NOT NULL
+				,PartionGroup																			VARCHAR(600) NOT NULL
+				,TotalValue																				DECIMAL(38, 19) NOT NULL
+				,PercentageContribution																	DECIMAL(38, 19) NOT NULL
+				,SuggestedNewContribution																DECIMAL(38, 19) NOT NULL
+				,ConstrainedSuggestedNewContribution													DECIMAL(38, 19)	NOT NULL
+				--,AmountNeededTosubtractFromOrderMultipleForAddingToContribution							DECIMAL(38, 19)	NOT NULL
+				,SuggestedNewContributionRoundedDownToOrderMultiple										DECIMAL(38, 19)	NOT NULL
+				,SuggestedNewContributionRoundedUpToOrderMultiple										DECIMAL(38, 19)	NOT NULL
+				,SuggestedNewContributionRoundedClosestToOrderMultiple									DECIMAL(38, 19)	NOT NULL
+				,OrderMultiple_RunningTotal_ToAdd														DECIMAL(38, 19) NOT NULL
+				,OrderMultiple_RunningTotal_ToSubtract													DECIMAL(38, 19) NOT NULL
+				,ConstrainedSuggestedNewContribution_Over												DECIMAL(38, 19) NOT NULL
+				,SuggestedNewContributionRoundedDownToOrderMultiple_Over								DECIMAL(38, 19) NOT NULL
+				,SuggestedNewContributionRoundedUpToOrderMultiple_Over									DECIMAL(38, 19) NOT NULL
+				,SuggestedNewContributionRoundedClosestToOrderMultiple_Over								DECIMAL(38, 19) NOT NULL
+				,ConstrainedSuggestedNewContribution_OverConstrainedToOrderMultiple						DECIMAL(38, 19) DEFAULT 0
+				,SuggestedNewContributionRoundedDownToOrderMultiple_OverConstrainedToOrderMultiple		DECIMAL(38, 19) DEFAULT 0
+				,SuggestedNewContributionRoundedUpToOrderMultiple_OverConstrainedToOrderMultiple		DECIMAL(38, 19) DEFAULT 0
+				,SuggestedNewContributionRoundedClosestToOrderMultiple_OverConstrainedToOrderMultiple	DECIMAL(38, 19) DEFAULT 0
+				);
+		END;
+	END
 			
 	IF OBJECT_ID('TEMPDB..#Values') IS NOT NULL
 		DROP TABLE #Values;
@@ -52,7 +97,7 @@ BEGIN
 		,MinValue			DECIMAL(38, 19) NOT NULL
 		,MaxValue			DECIMAL(38, 19) NOT NULL
 		,TotalAvailable		DECIMAL(38, 19) NOT NULL
-		,Rounding			DECIMAL(38, 19) NOT NULL
+		,OrderMultiple		DECIMAL(38, 19) NOT NULL
 		,PartionGroup		VARCHAR(600) NOT NULL
 		);
 			
@@ -67,49 +112,49 @@ BEGIN
 		,MinValue													DECIMAL(38, 19) NOT NULL
 		,MaxValue													DECIMAL(38, 19) NOT NULL
 		,TotalAvailable												DECIMAL(38, 19) NOT NULL
-		,Rounding													DECIMAL(38, 19) NOT NULL
+		,OrderMultiple												DECIMAL(38, 19) NOT NULL
 		,PartionGroup												VARCHAR(600) NOT NULL
 		,TotalValue													DECIMAL(38, 19) NOT NULL
 		,PercentageContribution										DECIMAL(38, 19) NOT NULL
 		,SuggestedNewContribution									DECIMAL(38, 19) NOT NULL
 		,ConstrainedSuggestedNewContribution						DECIMAL(38, 19)	NOT NULL
-		--,AmountNeededTosubtractFromRoundingForAddingToContribution	DECIMAL(38, 19)	NOT NULL
-		,SuggestedNewContributionRoundedDownToRounding				DECIMAL(38, 19)	NOT NULL
-		,SuggestedNewContributionRoundedUpToRounding				DECIMAL(38, 19)	NOT NULL
-		,SuggestedNewContributionRoundedClosestToRounding			DECIMAL(38, 19)	NOT NULL
+		--,AmountNeededTosubtractFromOrderMultipleForAddingToContribution	DECIMAL(38, 19)	NOT NULL
+		,SuggestedNewContributionRoundedDownToOrderMultiple			DECIMAL(38, 19)	NOT NULL
+		,SuggestedNewContributionRoundedUpToOrderMultiple			DECIMAL(38, 19)	NOT NULL
+		,SuggestedNewContributionRoundedClosestToOrderMultiple		DECIMAL(38, 19)	NOT NULL
 		);
 			
 	IF OBJECT_ID('TEMPDB..#OverNewContributionValues') IS NOT NULL
 		DROP TABLE #OverNewContributionValues;
 
 	CREATE TABLE #OverNewContributionValues(
-		 ID																			BIGINT IDENTITY(1,1) PRIMARY KEY NOT NULL
-		,ExternalID																	BIGINT NOT NULL
-		,ExternalCode																VARCHAR(8000) NOT NULL
-		,Value																		DECIMAL(38, 19) NOT NULL
-		,MinValue																	DECIMAL(38, 19) NOT NULL
-		,MaxValue																	DECIMAL(38, 19) NOT NULL
-		,TotalAvailable																DECIMAL(38, 19) NOT NULL
-		,Rounding																	DECIMAL(38, 19) NOT NULL
-		,PartionGroup																VARCHAR(600) NOT NULL
-		,TotalValue																	DECIMAL(38, 19) NOT NULL
-		,PercentageContribution														DECIMAL(38, 19) NOT NULL
-		,SuggestedNewContribution													DECIMAL(38, 19) NOT NULL
-		,ConstrainedSuggestedNewContribution										DECIMAL(38, 19)	NOT NULL
-		--,AmountNeededTosubtractFromRoundingForAddingToContribution					DECIMAL(38, 19)	NOT NULL
-		,SuggestedNewContributionRoundedDownToRounding								DECIMAL(38, 19)	NOT NULL
-		,SuggestedNewContributionRoundedUpToRounding								DECIMAL(38, 19)	NOT NULL
-		,SuggestedNewContributionRoundedClosestToRounding							DECIMAL(38, 19)	NOT NULL
-		,Rounding_RunningTotal_ToAdd												DECIMAL(38, 19) NOT NULL
-		,Rounding_RunningTotal_ToSubtract											DECIMAL(38, 19) NOT NULL
-		,ConstrainedSuggestedNewContribution_Over									DECIMAL(38, 19) NOT NULL
-		,SuggestedNewContributionRoundedDownToRounding_Over							DECIMAL(38, 19) NOT NULL
-		,SuggestedNewContributionRoundedUpToRounding_Over							DECIMAL(38, 19) NOT NULL
-		,SuggestedNewContributionRoundedClosestToRounding_Over						DECIMAL(38, 19) NOT NULL
-		,ConstrainedSuggestedNewContribution_OverConstrainedToRounding				DECIMAL(38, 19) DEFAULT 0
-		,SuggestedNewContributionRoundedDownToRounding_OverConstrainedToRounding	DECIMAL(38, 19) DEFAULT 0
-		,SuggestedNewContributionRoundedUpToRounding_OverConstrainedToRounding		DECIMAL(38, 19) DEFAULT 0
-		,SuggestedNewContributionRoundedClosestToRounding_OverConstrainedToRounding DECIMAL(38, 19) DEFAULT 0
+		 ID																						BIGINT IDENTITY(1,1) PRIMARY KEY NOT NULL
+		,ExternalID																				BIGINT NOT NULL
+		,ExternalCode																			VARCHAR(8000) NOT NULL
+		,Value																					DECIMAL(38, 19) NOT NULL
+		,MinValue																				DECIMAL(38, 19) NOT NULL
+		,MaxValue																				DECIMAL(38, 19) NOT NULL
+		,TotalAvailable																			DECIMAL(38, 19) NOT NULL
+		,OrderMultiple																			DECIMAL(38, 19) NOT NULL
+		,PartionGroup																			VARCHAR(600) NOT NULL
+		,TotalValue																				DECIMAL(38, 19) NOT NULL
+		,PercentageContribution																	DECIMAL(38, 19) NOT NULL
+		,SuggestedNewContribution																DECIMAL(38, 19) NOT NULL
+		,ConstrainedSuggestedNewContribution													DECIMAL(38, 19)	NOT NULL
+		--,AmountNeededTosubtractFromOrderMultipleForAddingToContribution							DECIMAL(38, 19)	NOT NULL
+		,SuggestedNewContributionRoundedDownToOrderMultiple										DECIMAL(38, 19)	NOT NULL
+		,SuggestedNewContributionRoundedUpToOrderMultiple										DECIMAL(38, 19)	NOT NULL
+		,SuggestedNewContributionRoundedClosestToOrderMultiple									DECIMAL(38, 19)	NOT NULL
+		,OrderMultiple_RunningTotal_ToAdd														DECIMAL(38, 19) NOT NULL
+		,OrderMultiple_RunningTotal_ToSubtract													DECIMAL(38, 19) NOT NULL
+		,ConstrainedSuggestedNewContribution_Over												DECIMAL(38, 19) NOT NULL
+		,SuggestedNewContributionRoundedDownToOrderMultiple_Over								DECIMAL(38, 19) NOT NULL
+		,SuggestedNewContributionRoundedUpToOrderMultiple_Over									DECIMAL(38, 19) NOT NULL
+		,SuggestedNewContributionRoundedClosestToOrderMultiple_Over								DECIMAL(38, 19) NOT NULL
+		,ConstrainedSuggestedNewContribution_OverConstrainedToOrderMultiple						DECIMAL(38, 19) DEFAULT 0
+		,SuggestedNewContributionRoundedDownToOrderMultiple_OverConstrainedToOrderMultiple		DECIMAL(38, 19) DEFAULT 0
+		,SuggestedNewContributionRoundedUpToOrderMultiple_OverConstrainedToOrderMultiple		DECIMAL(38, 19) DEFAULT 0
+		,SuggestedNewContributionRoundedClosestToOrderMultiple_OverConstrainedToOrderMultiple	DECIMAL(38, 19) DEFAULT 0
 		);
 
 		
@@ -121,7 +166,7 @@ BEGIN
 			,TRY_CONVERT(DECIMAL(38, 19),'+@MinValueField+')
 			,TRY_CONVERT(DECIMAL(38, 19),'+@MaxValueField+')
 			,TRY_CONVERT(DECIMAL(38, 19),'+@TotalAvailableField+')
-			,TRY_CONVERT(DECIMAL(38, 19),'+@RoundingField+')
+			,TRY_CONVERT(DECIMAL(38, 19),'+@OrderMultipleField+')
 			,TRY_CONVERT(VARCHAR(900),'+@PartionGroupField+')
 		FROM '+@TableName+';
 		';
@@ -134,7 +179,7 @@ BEGIN
 				  MinValue ,
 				  MaxValue ,
 				  TotalAvailable ,
-				  Rounding ,
+				  OrderMultiple ,
 				  PartionGroup 
 				)
 		EXEC sp_ExecuteSQL @SQL
@@ -150,15 +195,15 @@ BEGIN
 											,MinValue
 											,MaxValue
 											,TotalAvailable
-											,Rounding
+											,OrderMultiple
 											,PartionGroup
 											,TotalValue
 											,PercentageContribution
 											,SuggestedNewContribution
 											,ConstrainedSuggestedNewContribution
-											,SuggestedNewContributionRoundedDownToRounding
-											,SuggestedNewContributionRoundedUpToRounding
-											,SuggestedNewContributionRoundedClosestToRounding
+											,SuggestedNewContributionRoundedDownToOrderMultiple
+											,SuggestedNewContributionRoundedUpToOrderMultiple
+											,SuggestedNewContributionRoundedClosestToOrderMultiple
 											)
 		SELECT 
 			 V.ExternalID
@@ -167,7 +212,7 @@ BEGIN
 			,V.MinValue
 			,V.MaxValue
 			,V.TotalAvailable
-			,V.Rounding
+			,V.OrderMultiple
 			,V.PartionGroup
 			,SUM(V.Value) OVER (PARTITION BY V.PartionGroup) AS TotalValue
 			,(V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup)) AS PercentageContribution
@@ -180,30 +225,29 @@ BEGIN
 			END AS ConstrainedSuggestedNewContribution
 			,CASE WHEN @bRoundDown = 1
 				THEN 
-					((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)+(-((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)%V.Rounding)
+					((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)+(-((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)%V.OrderMultiple)
 				ELSE 0
-			 END AS SuggestedNewContributionRoundedDownToRounding
+			 END AS SuggestedNewContributionRoundedDownToOrderMultiple
 			,CASE WHEN @bRoundUp = 1
 				THEN
-					((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)+(V.Rounding-((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)%V.Rounding) 
+					((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)+(V.OrderMultiple-((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)%V.OrderMultiple) 
 				ELSE 0
-			 END AS SuggestedNewContributionRoundedUpToRounding
+			 END AS SuggestedNewContributionRoundedUpToOrderMultiple
 			,CASE WHEN @bRoundClosest = 1
 				THEN
-					CASE WHEN CONVERT(DECIMAL(38, 19),((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)%CONVERT(DECIMAL(38, 19), V.Rounding)) / V.Rounding > 0.5
-						THEN ((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)+(V.Rounding-((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)%V.Rounding)
+					CASE WHEN CONVERT(DECIMAL(38, 19),((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)%CONVERT(DECIMAL(38, 19), V.OrderMultiple)) / V.OrderMultiple > 0.5
+						THEN ((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)+(V.OrderMultiple-((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)%V.OrderMultiple)
 					 ELSE
-						((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)+(-((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)%V.Rounding)
+						((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)+(-((V.Value/SUM(V.Value) OVER (PARTITION BY V.PartionGroup))*V.TotalAvailable)%V.OrderMultiple)
 					END 
 				ELSE 0
-				END AS SuggestedNewContributionRoundedClosestToRounding
+				END AS SuggestedNewContributionRoundedClosestToOrderMultiple
 		FROM #Values V
-
-		CREATE NONCLUSTERED INDEX IX_#NewContributionValues_MinValue ON #NewContributionValues(MinValue);
-		CREATE NONCLUSTERED INDEX IX_#NewContributionValues_MaxValue ON #NewContributionValues(MaxValue);
 		
 		IF((SELECT SUM(CV.MinValue) FROM #NewContributionValues CV) IS NOT NULL)
 		BEGIN
+
+			CREATE NONCLUSTERED INDEX IX_#NewContributionValues_MinValue ON #NewContributionValues(MinValue);
 			
 			UPDATE CV
 			SET 
@@ -213,20 +257,20 @@ BEGIN
 														ELSE
 															CV.ConstrainedSuggestedNewContribution
 													 END
-				,SuggestedNewContributionRoundedDownToRounding = CASE WHEN (CV.SuggestedNewContributionRoundedDownToRounding < (CV.MinValue+(CV.Rounding-(CV.MinValue%CV.Rounding))))
-																	THEN CV.MinValue+(CV.Rounding-(CV.MinValue%CV.Rounding))
+				,SuggestedNewContributionRoundedDownToOrderMultiple = CASE WHEN (CV.SuggestedNewContributionRoundedDownToOrderMultiple < (CV.MinValue+(CV.OrderMultiple-(CV.MinValue%CV.OrderMultiple))))
+																	THEN CV.MinValue+(CV.OrderMultiple-(CV.MinValue%CV.OrderMultiple))
 																	ELSE
-																		CV.SuggestedNewContributionRoundedDownToRounding
+																		CV.SuggestedNewContributionRoundedDownToOrderMultiple
 																 END
-				,SuggestedNewContributionRoundedUpToRounding = CASE WHEN (CV.SuggestedNewContributionRoundedUpToRounding < (CV.MinValue+(CV.Rounding-(CV.MinValue%CV.Rounding))))
-																	THEN CV.MinValue+(CV.Rounding-(CV.MinValue%CV.Rounding))
+				,SuggestedNewContributionRoundedUpToOrderMultiple = CASE WHEN (CV.SuggestedNewContributionRoundedUpToOrderMultiple < (CV.MinValue+(CV.OrderMultiple-(CV.MinValue%CV.OrderMultiple))))
+																	THEN CV.MinValue+(CV.OrderMultiple-(CV.MinValue%CV.OrderMultiple))
 																	ELSE
-																		CV.SuggestedNewContributionRoundedUpToRounding
+																		CV.SuggestedNewContributionRoundedUpToOrderMultiple
 																 END
-				,SuggestedNewContributionRoundedClosestToRounding = CASE WHEN (CV.SuggestedNewContributionRoundedClosestToRounding < (CV.MinValue+(CV.Rounding-(CV.MinValue%CV.Rounding))))
-																		THEN CV.MinValue+(CV.Rounding-(CV.MinValue%CV.Rounding))
+				,SuggestedNewContributionRoundedClosestToOrderMultiple = CASE WHEN (CV.SuggestedNewContributionRoundedClosestToOrderMultiple < (CV.MinValue+(CV.OrderMultiple-(CV.MinValue%CV.OrderMultiple))))
+																		THEN CV.MinValue+(CV.OrderMultiple-(CV.MinValue%CV.OrderMultiple))
 																		ELSE
-																			CV.SuggestedNewContributionRoundedClosestToRounding
+																			CV.SuggestedNewContributionRoundedClosestToOrderMultiple
 																	 END
 			FROM #NewContributionValues CV
 
@@ -234,6 +278,8 @@ BEGIN
 
 		IF((SELECT SUM(CV.MAXVALUE) FROM #NewContributionValues CV) IS NOT NULL)
 		BEGIN
+			
+			CREATE NONCLUSTERED INDEX IX_#NewContributionValues_MaxValue ON #NewContributionValues(MaxValue);
 
 			UPDATE CV
 			SET 
@@ -243,20 +289,20 @@ BEGIN
 														ELSE
 															CV.ConstrainedSuggestedNewContribution
 													 END
-				,SuggestedNewContributionRoundedDownToRounding = CASE WHEN (CV.SuggestedNewContributionRoundedDownToRounding > CV.MaxValue)
-																	THEN CV.MaxValue+(-(CV.MaxValue%CV.Rounding))
+				,SuggestedNewContributionRoundedDownToOrderMultiple = CASE WHEN (CV.SuggestedNewContributionRoundedDownToOrderMultiple > CV.MaxValue)
+																	THEN CV.MaxValue+(-(CV.MaxValue%CV.OrderMultiple))
 																	ELSE
-																		CV.SuggestedNewContributionRoundedDownToRounding
+																		CV.SuggestedNewContributionRoundedDownToOrderMultiple
 																 END
-				,SuggestedNewContributionRoundedUpToRounding = CASE WHEN (CV.SuggestedNewContributionRoundedUpToRounding > CV.MaxValue)
-																	THEN CV.MaxValue+(-(CV.MaxValue%CV.Rounding))
+				,SuggestedNewContributionRoundedUpToOrderMultiple = CASE WHEN (CV.SuggestedNewContributionRoundedUpToOrderMultiple > CV.MaxValue)
+																	THEN CV.MaxValue+(-(CV.MaxValue%CV.OrderMultiple))
 																	ELSE
-																		CV.SuggestedNewContributionRoundedUpToRounding
+																		CV.SuggestedNewContributionRoundedUpToOrderMultiple
 																 END
-				,SuggestedNewContributionRoundedClosestToRounding = CASE WHEN (CV.SuggestedNewContributionRoundedClosestToRounding > CV.MaxValue)
-																	THEN CV.MaxValue+(-(CV.MaxValue%CV.Rounding))
+				,SuggestedNewContributionRoundedClosestToOrderMultiple = CASE WHEN (CV.SuggestedNewContributionRoundedClosestToOrderMultiple > CV.MaxValue)
+																	THEN CV.MaxValue+(-(CV.MaxValue%CV.OrderMultiple))
 																	ELSE
-																		CV.SuggestedNewContributionRoundedUpToRounding
+																		CV.SuggestedNewContributionRoundedUpToOrderMultiple
 																 END
 			FROM #NewContributionValues CV
 		
@@ -269,22 +315,22 @@ BEGIN
 		          ,MinValue
 		          ,MaxValue
 		          ,TotalAvailable
-		          ,Rounding
+		          ,OrderMultiple
 		          ,PartionGroup
 		          ,TotalValue
 		          ,PercentageContribution
 		          ,SuggestedNewContribution
 		          ,ConstrainedSuggestedNewContribution
-		          --,AmountNeededTosubtractFromRoundingForAddingToContribution
-		          ,SuggestedNewContributionRoundedDownToRounding
-		          ,SuggestedNewContributionRoundedUpToRounding
-		          ,SuggestedNewContributionRoundedClosestToRounding
-		          ,Rounding_RunningTotal_ToAdd
-		          ,Rounding_RunningTotal_ToSubtract
+		          --,AmountNeededTosubtractFromOrderMultipleForAddingToContribution
+		          ,SuggestedNewContributionRoundedDownToOrderMultiple
+		          ,SuggestedNewContributionRoundedUpToOrderMultiple
+		          ,SuggestedNewContributionRoundedClosestToOrderMultiple
+		          ,OrderMultiple_RunningTotal_ToAdd
+		          ,OrderMultiple_RunningTotal_ToSubtract
 		          ,ConstrainedSuggestedNewContribution_Over
-		          ,SuggestedNewContributionRoundedDownToRounding_Over
-		          ,SuggestedNewContributionRoundedUpToRounding_Over
-		          ,SuggestedNewContributionRoundedClosestToRounding_Over
+		          ,SuggestedNewContributionRoundedDownToOrderMultiple_Over
+		          ,SuggestedNewContributionRoundedUpToOrderMultiple_Over
+		          ,SuggestedNewContributionRoundedClosestToOrderMultiple_Over
 		        )
 		SELECT 
 			 ExternalID
@@ -293,76 +339,162 @@ BEGIN
 			,MinValue
 			,MaxValue
 			,TotalAvailable
-			,Rounding
+			,OrderMultiple
 			,PartionGroup
 			,TotalValue
 			,PercentageContribution
 			,SuggestedNewContribution
 			,ConstrainedSuggestedNewContribution
-			--,AmountNeededTosubtractFromRoundingForAddingToContribution
-			,SuggestedNewContributionRoundedDownToRounding
-			,SuggestedNewContributionRoundedUpToRounding
-			,SuggestedNewContributionRoundedClosestToRounding
-			,SUM(NCV.Rounding) OVER (PARTITION BY NCV.PartionGroup ORDER BY NCV.PartionGroup, NCV.Value DESC) Rounding_RunningTotal_ToAdd
-			,SUM(NCV.Rounding) OVER (PARTITION BY NCV.PartionGroup ORDER BY NCV.PartionGroup, NCV.Value ASC) Rounding_RunningTotal_ToSubtract
-			,NCV.TotalAvailable - SUM(NCV.ConstrainedSuggestedNewContribution) OVER (PARTITION BY NCV.PartionGroup ORDER BY NCV.PartionGroup, NCV.Value DESC)  AS ConstrainedSuggestedNewContribution_Over
-			,NCV.TotalAvailable - SUM(NCV.SuggestedNewContributionRoundedDownToRounding) OVER (PARTITION BY NCV.PartionGroup ORDER BY NCV.PartionGroup, NCV.Value DESC)  AS SuggestedNewContributionRoundedDownToRounding_Over
-			,NCV.TotalAvailable - SUM(NCV.SuggestedNewContributionRoundedUpToRounding) OVER (PARTITION BY NCV.PartionGroup ORDER BY NCV.PartionGroup, NCV.Value DESC)  AS SuggestedNewContributionRoundedUpToRounding_Over
-			,NCV.TotalAvailable - SUM(NCV.SuggestedNewContributionRoundedClosestToRounding) OVER (PARTITION BY NCV.PartionGroup ORDER BY NCV.PartionGroup, NCV.Value ASC)  AS SuggestedNewContributionRoundedClosestToRounding_Over
+			--,AmountNeededTosubtractFromOrderMultipleForAddingToContribution
+			,SuggestedNewContributionRoundedDownToOrderMultiple
+			,SuggestedNewContributionRoundedUpToOrderMultiple
+			,SuggestedNewContributionRoundedClosestToOrderMultiple
+			,SUM(NCV.OrderMultiple) OVER (PARTITION BY NCV.PartionGroup ORDER BY NCV.PartionGroup, NCV.Value DESC, ExternalID) OrderMultiple_RunningTotal_ToAdd
+			,SUM(NCV.OrderMultiple) OVER (PARTITION BY NCV.PartionGroup ORDER BY NCV.PartionGroup, NCV.Value ASC, ExternalID) OrderMultiple_RunningTotal_ToSubtract
+			,NCV.TotalAvailable - SUM(NCV.ConstrainedSuggestedNewContribution) OVER (PARTITION BY NCV.PartionGroup ORDER BY NCV.PartionGroup, NCV.Value DESC, ExternalID)  AS ConstrainedSuggestedNewContribution_Over
+			,NCV.TotalAvailable - SUM(NCV.SuggestedNewContributionRoundedDownToOrderMultiple) OVER (PARTITION BY NCV.PartionGroup ORDER BY NCV.PartionGroup, NCV.Value DESC, ExternalID)  AS SuggestedNewContributionRoundedDownToOrderMultiple_Over
+			,NCV.TotalAvailable - SUM(NCV.SuggestedNewContributionRoundedUpToOrderMultiple) OVER (PARTITION BY NCV.PartionGroup ORDER BY NCV.PartionGroup, NCV.Value DESC, ExternalID)  AS SuggestedNewContributionRoundedUpToOrderMultiple_Over
+			,NCV.TotalAvailable - SUM(NCV.SuggestedNewContributionRoundedClosestToOrderMultiple) OVER (PARTITION BY NCV.PartionGroup ORDER BY NCV.PartionGroup, NCV.Value ASC, ExternalID)  AS SuggestedNewContributionRoundedClosestToOrderMultiple_Over
 		FROM #NewContributionValues NCV
 
-		-- Add Rounding to ConstrainedSuggestedNewContribution
+		-- Add OrderMultiple to ConstrainedSuggestedNewContribution
 		UPDATE FP
 			SET
-			ConstrainedSuggestedNewContribution_OverConstrainedToRounding = ConstrainedSuggestedNewContribution+Rounding
+			ConstrainedSuggestedNewContribution_OverConstrainedToOrderMultiple = CASE WHEN (ConstrainedSuggestedNewContribution+OrderMultiple <= FP.MaxValue)
+																				THEN ConstrainedSuggestedNewContribution+OrderMultiple
+																				ELSE
+																					FP.ConstrainedSuggestedNewContribution
+																			END
+			
 		FROM #OverNewContributionValues FP
-		WHERE Rounding_RunningTotal_ToAdd <= ConstrainedSuggestedNewContribution_Over
+		WHERE OrderMultiple_RunningTotal_ToAdd <= ConstrainedSuggestedNewContribution_Over
+		OR ConstrainedSuggestedNewContribution_Over = 0
 
-		-- Add Rounding to SuggestedNewContributionRoundedDownToRounding
+		-- Add OrderMultiple to SuggestedNewContributionRoundedDownToOrderMultiple
 		UPDATE FP
 			SET
-			SuggestedNewContributionRoundedDownToRounding_OverConstrainedToRounding = SuggestedNewContributionRoundedDownToRounding+Rounding
+			SuggestedNewContributionRoundedDownToOrderMultiple_OverConstrainedToOrderMultiple = CASE WHEN (SuggestedNewContributionRoundedDownToOrderMultiple+OrderMultiple <= FP.MaxValue AND (SuggestedNewContributionRoundedDownToOrderMultiple+OrderMultiple <= TotalAvailable))
+																							THEN SuggestedNewContributionRoundedDownToOrderMultiple+OrderMultiple
+																							ELSE
+																								FP.SuggestedNewContributionRoundedDownToOrderMultiple
+																						END
 		FROM #OverNewContributionValues FP
-		WHERE Rounding_RunningTotal_ToAdd <= SuggestedNewContributionRoundedDownToRounding_Over
+		WHERE OrderMultiple_RunningTotal_ToAdd <= SuggestedNewContributionRoundedDownToOrderMultiple_Over
+		OR SuggestedNewContributionRoundedDownToOrderMultiple_Over = 0
 
-		-- Subtract Rounding FROM SuggestedNewContributionRoundedUpToRounding
+		-- Subtract OrderMultiple FROM SuggestedNewContributionRoundedUpToOrderMultiple
 		UPDATE FP
 			SET
-			SuggestedNewContributionRoundedUpToRounding_OverConstrainedToRounding = SuggestedNewContributionRoundedUpToRounding-Rounding
+			SuggestedNewContributionRoundedUpToOrderMultiple_OverConstrainedToOrderMultiple = CASE WHEN ((SuggestedNewContributionRoundedUpToOrderMultiple-OrderMultiple >= FP.MinValue AND SuggestedNewContributionRoundedDownToOrderMultiple > FP.MaxValue)OR (SuggestedNewContributionRoundedUpToOrderMultiple_Over > TotalAvailable))
+																							THEN SuggestedNewContributionRoundedUpToOrderMultiple-OrderMultiple
+																							ELSE
+																								FP.SuggestedNewContributionRoundedUpToOrderMultiple
+																						END
 		FROM #OverNewContributionValues FP
-		WHERE Rounding_RunningTotal_ToSubtract < SuggestedNewContributionRoundedUpToRounding_Over
+		WHERE OrderMultiple_RunningTotal_ToSubtract < SuggestedNewContributionRoundedUpToOrderMultiple_Over
+		OR SuggestedNewContributionRoundedUpToOrderMultiple_Over = 0
 
-		SELECT 
-			 ONCV.ID
-			,ONCV.ExternalID
-			,ONCV.ExternalCode
-			,ONCV.Value
-			,ONCV.MinValue
-			,ONCV.MaxValue
-			,ONCV.TotalAvailable
-			,ONCV.Rounding
-			,ONCV.PartionGroup
-			,ONCV.TotalValue
-			,ONCV.PercentageContribution
-			,ONCV.SuggestedNewContribution
-			,ONCV.ConstrainedSuggestedNewContribution
-			--,ONCV.AmountNeededTosubtractFromRoundingForAddingToContribution
-			,ONCV.SuggestedNewContributionRoundedDownToRounding
-			,ONCV.SuggestedNewContributionRoundedUpToRounding
-			,ONCV.SuggestedNewContributionRoundedClosestToRounding
-			,ONCV.Rounding_RunningTotal_ToAdd
-			,ONCV.Rounding_RunningTotal_ToSubtract
-			,ONCV.ConstrainedSuggestedNewContribution_Over
-			,ONCV.SuggestedNewContributionRoundedDownToRounding_Over
-			,ONCV.SuggestedNewContributionRoundedUpToRounding_Over
-			,ONCV.SuggestedNewContributionRoundedClosestToRounding_Over
-			,ONCV.ConstrainedSuggestedNewContribution_OverConstrainedToRounding
-			,ONCV.SuggestedNewContributionRoundedDownToRounding_OverConstrainedToRounding
-			,ONCV.SuggestedNewContributionRoundedUpToRounding_OverConstrainedToRounding
-			,ONCV.SuggestedNewContributionRoundedClosestToRounding_OverConstrainedToRounding
-		FROM #OverNewContributionValues ONCV
-		--WHERE ONCV.PartionGroup = 1
-		--ORDER BY ONCV.PartionGroup, ONCV.Value DESC
+		
+		IF(@bTruncateSaveTable = 1)
+		BEGIN
+			TRUNCATE TABLE <SQL_DataBase_Schema,schemaname, schema_name>.ConstrainedApportion_Partitioned_ROQ;
+		END
 
+		IF(@bSaveToTable = 1)
+		BEGIN
+			INSERT INTO <SQL_DataBase_Schema,schemaname, schema_name>.ConstrainedApportion_Partitioned_ROQ
+		        (  
+					 ID
+					,ExternalID
+					,ExternalCode
+					,Value
+					,MinValue
+					,MaxValue
+					,TotalAvailable
+					,OrderMultiple
+					,PartionGroup
+					,TotalValue
+					,PercentageContribution
+					,SuggestedNewContribution
+					,ConstrainedSuggestedNewContribution
+					--AmountNeededTosubtractFromOrderMultipleForAddingToContribution
+					,SuggestedNewContributionRoundedDownToOrderMultiple
+					,SuggestedNewContributionRoundedUpToOrderMultiple
+					,SuggestedNewContributionRoundedClosestToOrderMultiple
+					,OrderMultiple_RunningTotal_ToAdd
+					,OrderMultiple_RunningTotal_ToSubtract
+					,ConstrainedSuggestedNewContribution_Over
+					,SuggestedNewContributionRoundedDownToOrderMultiple_Over
+					,SuggestedNewContributionRoundedUpToOrderMultiple_Over
+					,SuggestedNewContributionRoundedClosestToOrderMultiple_Over
+					,ConstrainedSuggestedNewContribution_OverConstrainedToOrderMultiple
+					,SuggestedNewContributionRoundedDownToOrderMultiple_OverConstrainedToOrderMultiple
+					,SuggestedNewContributionRoundedUpToOrderMultiple_OverConstrainedToOrderMultiple
+					,SuggestedNewContributionRoundedClosestToOrderMultiple_OverConstrainedToOrderMultiple
+		        )
+			SELECT 
+				 ONCV.ID
+				,ONCV.ExternalID
+				,ONCV.ExternalCode
+				,ONCV.Value
+				,ONCV.MinValue
+				,ONCV.MaxValue
+				,ONCV.TotalAvailable
+				,ONCV.OrderMultiple
+				,ONCV.PartionGroup
+				,ONCV.TotalValue
+				,ONCV.PercentageContribution
+				,ONCV.SuggestedNewContribution
+				,ONCV.ConstrainedSuggestedNewContribution
+				--,ONCV.AmountNeededTosubtractFromOrderMultipleForAddingToContribution
+				,ONCV.SuggestedNewContributionRoundedDownToOrderMultiple
+				,ONCV.SuggestedNewContributionRoundedUpToOrderMultiple
+				,ONCV.SuggestedNewContributionRoundedClosestToOrderMultiple
+				,ONCV.OrderMultiple_RunningTotal_ToAdd
+				,ONCV.OrderMultiple_RunningTotal_ToSubtract
+				,ONCV.ConstrainedSuggestedNewContribution_Over
+				,ONCV.SuggestedNewContributionRoundedDownToOrderMultiple_Over
+				,ONCV.SuggestedNewContributionRoundedUpToOrderMultiple_Over
+				,ONCV.SuggestedNewContributionRoundedClosestToOrderMultiple_Over
+				,ONCV.ConstrainedSuggestedNewContribution_OverConstrainedToOrderMultiple
+				,ONCV.SuggestedNewContributionRoundedDownToOrderMultiple_OverConstrainedToOrderMultiple
+				,ONCV.SuggestedNewContributionRoundedUpToOrderMultiple_OverConstrainedToOrderMultiple
+				,ONCV.SuggestedNewContributionRoundedClosestToOrderMultiple_OverConstrainedToOrderMultiple
+			FROM #OverNewContributionValues ONCV
+		END
+		ELSE
+		BEGIN
+			SELECT 
+				 ONCV.ID
+				,ONCV.ExternalID
+				,ONCV.ExternalCode
+				,ONCV.Value
+				,ONCV.MinValue
+				,ONCV.MaxValue
+				,ONCV.TotalAvailable
+				,ONCV.OrderMultiple
+				,ONCV.PartionGroup
+				,ONCV.TotalValue
+				,ONCV.PercentageContribution
+				,ONCV.SuggestedNewContribution
+				,ONCV.ConstrainedSuggestedNewContribution
+				--,ONCV.AmountNeededTosubtractFromOrderMultipleForAddingToContribution
+				,ONCV.SuggestedNewContributionRoundedDownToOrderMultiple
+				,ONCV.SuggestedNewContributionRoundedUpToOrderMultiple
+				,ONCV.SuggestedNewContributionRoundedClosestToOrderMultiple
+				,ONCV.OrderMultiple_RunningTotal_ToAdd
+				,ONCV.OrderMultiple_RunningTotal_ToSubtract
+				,ONCV.ConstrainedSuggestedNewContribution_Over
+				,ONCV.SuggestedNewContributionRoundedDownToOrderMultiple_Over
+				,ONCV.SuggestedNewContributionRoundedUpToOrderMultiple_Over
+				,ONCV.SuggestedNewContributionRoundedClosestToOrderMultiple_Over
+				,ONCV.ConstrainedSuggestedNewContribution_OverConstrainedToOrderMultiple
+				,ONCV.SuggestedNewContributionRoundedDownToOrderMultiple_OverConstrainedToOrderMultiple
+				,ONCV.SuggestedNewContributionRoundedUpToOrderMultiple_OverConstrainedToOrderMultiple
+				,ONCV.SuggestedNewContributionRoundedClosestToOrderMultiple_OverConstrainedToOrderMultiple
+			FROM #OverNewContributionValues ONCV
+			--WHERE ONCV.PartionGroup = 1
+			--ORDER BY ONCV.PartionGroup, ONCV.Value DESC
+		END
 END
 GO

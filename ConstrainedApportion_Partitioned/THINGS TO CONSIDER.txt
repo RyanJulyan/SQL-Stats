@@ -1,0 +1,6 @@
+1. The typical standard ones
+	a. Constrain to a truck load (weight and Cubic feet / meters )
+	b. Constrain to a quantity, Cost value or volume
+2. Order quantity by vendor across multiple locations
+3. Distribution
+	a. Constrain to current stock on hand with order schedule into the future (basically so all the store that order today don’t get all the stock)
