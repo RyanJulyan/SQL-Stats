@@ -44,7 +44,7 @@ IF OBJECT_ID('tempdb..#DaysOfWeek') IS NOT NULL
 	;WITH DateRange AS
 	(
 
-	SELECT StartDate, ROW_NUMBER() OVER(ORDER BY @StarDate) RoWNumber,DATEADD(ms,-3, DATEADD(dd,2, StartDate)) AS EndDate, Endperiod
+	SELECT StartDate, ROW_NUMBER() OVER(ORDER BY @StarDate) RoWNumber,DATEADD(ms,-3, DATEADD(dd,1, StartDate)) AS EndDate, Endperiod
 	FROM #StartDate
 
 	UNION ALL
