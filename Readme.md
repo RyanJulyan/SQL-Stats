@@ -15,7 +15,7 @@ SQL-Stats is a personal project to assist me in learning statistics. I have chos
 * KmeanCluster_Partitioned
 * Pareto_Partitioned
 * TimeBuckets
-** Creates a Calendar daily, weekly, monthly, quarterly and yearly bucket (default 2 years)
+    * Creates a Calendar daily, weekly, monthly, quarterly and yearly bucket (default 2 years)
 
 ### Planned
 * ConstrainedApportion_Partitioned (Apportion out data based on a total available) 
