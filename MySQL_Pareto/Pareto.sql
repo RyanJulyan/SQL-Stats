@@ -30,8 +30,8 @@ BEGIN
 
     CREATE TEMPORARY TABLE IF NOT EXISTS `temp_JSON_Key_Value_Split`
     (
-         `key` VARCHAR(250) NOT NULL
-        ,`value` VARCHAR(250) NOT NULL
+         `key`      VARCHAR(250) NOT NULL
+        ,`value`    VARCHAR(250) NOT NULL
     );
 
     CALL JSON_Key_Value_Split(json);
@@ -101,11 +101,11 @@ BEGIN
 
     CREATE TEMPORARY TABLE IF NOT EXISTS `temp_Perc_Split`
     (
-         `key` VARCHAR(250) NOT NULL
-        ,`OriginalPrec` FLOAT NOT NULL
-        ,`ApportionedPrec` FLOAT NOT NULL
-        ,`LowerRange` FLOAT NULL
-        ,`UpperRange` FLOAT NULL
+         `key`              VARCHAR(250) NOT NULL
+        ,`OriginalPrec`     FLOAT NOT NULL
+        ,`ApportionedPrec`  FLOAT NOT NULL
+        ,`LowerRange`       FLOAT NULL
+        ,`UpperRange`       FLOAT NULL
     );
 
     SELECT 
@@ -194,8 +194,8 @@ BEGIN
 
     CREATE TABLE IF NOT EXISTS `resource_ParetoClassification`
     (
-         `rank` VARCHAR(250) NOT NULL
-        ,`value` VARCHAR(250) NOT NULL
+         `rank`         BIGINT NOT NULL
+        ,`resource_id`  BIGINT NOT NULL
     );
 
     SELECT *
