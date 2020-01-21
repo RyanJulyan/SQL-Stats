@@ -2,9 +2,10 @@ DROP PROCEDURE IF EXISTS ParetoClassification;
 
 DELIMITER //
 CREATE PROCEDURE ParetoClassification
-(IN scenarioID BIGINT)
+(IN ScenarioID BIGINT)
 BEGIN
 
+    DECLARE CompanyID           BIGINT UNSIGNED DEFAULT 0;
     DECLARE json                JSON;
     DECLARE Min_Date_Text       VARCHAR(250);
     DECLARE Max_Date_Text       VARCHAR(250);
@@ -17,16 +18,22 @@ BEGIN
     DECLARE `_counter`          BIGINT UNSIGNED DEFAULT 0;
     DECLARE UpperRange          FLOAT DEFAULT 0;
 
+    SELECT 
+        company_id
+    INTO CompanyID
+    FROM `scenarios` S
+    WHERE S.`id` = ScenarioID
+    LIMIT 1;
+
     SELECT
         COALESCE(SV.`key_value`,SO.`key_value`) as key_value
     INTO json
     FROM `scenario_options` SO
     LEFT JOIN  `scenario_values` SV
         ON SV.`scenario_option_id` = SO.`id`
-        AND SV.`scenario_id` = scenarioID
+        AND SV.`scenario_id` = ScenarioID
     WHERE SO.`option_name` = 'Set Service Level By Pareto'
     LIMIT 1;
-
 
     CREATE TEMPORARY TABLE IF NOT EXISTS `temp_JSON_Key_Value_Split`
     (
@@ -50,7 +57,7 @@ BEGIN
         FROM `transactions` T
         INNER JOIN `scenarios` S
             ON S.`transaction_source_id` = T.`transaction_source_id`
-        WHERE S.id = scenarioID;
+        WHERE S.`id` = ScenarioID;
     ELSE
         SELECT CONVERT(Min_Date_Text,DATE)
         INTO Min_Date;
@@ -71,7 +78,7 @@ BEGIN
         FROM `transactions` T
         INNER JOIN `scenarios` S
             ON S.`transaction_source_id` = T.`transaction_source_id`
-        WHERE S.id = scenarioID;
+        WHERE S.`id` = ScenarioID;
 
     ELSE
 
@@ -162,7 +169,7 @@ BEGIN
     FROM `transactions` T
     INNER JOIN `scenarios` S
         ON S.`transaction_source_id` = T.`transaction_source_id`
-    WHERE S.`id` = scenarioID
+    WHERE S.`id` = ScenarioID
     AND T.`actual_completion_date` >= Min_Date
     AND T.`actual_completion_date` <= Max_Date
     GROUP BY
@@ -182,8 +189,8 @@ BEGIN
          @rownum := @rownum + 1 AS rank
         ,resource_id
         ,actual_quantity
-        ,Count_Row_Number
-        ,@rownum / Count_Row_Number AS prec
+        ,Count_Row_Number AS count_row_number
+        ,@rownum / Count_Row_Number AS rolling_prec
     FROM temp_resource_actual_quantity, 
        (SELECT @rownum := 0) r
     ORDER BY 
@@ -192,16 +199,55 @@ BEGIN
     );
 
 
-    CREATE TABLE IF NOT EXISTS `resource_ParetoClassification`
+    CREATE TABLE IF NOT EXISTS `resource_pareto_classifications`
     (
-         `rank`         BIGINT NOT NULL
-        ,`resource_id`  BIGINT NOT NULL
+         `company_id`       BIGINT NOT NULL
+        ,`scenario_id`      BIGINT NOT NULL
+        ,`rank`             BIGINT NOT NULL
+        ,`resource_id`      BIGINT NOT NULL
+        ,`actual_quantity`  FLOAT NOT NULL
+        ,`count_row_number` BIGINT NOT NULL
+        ,`rolling_prec`     FLOAT NOT NULL
+        ,`key`              VARCHAR(250)
+        ,`OriginalPrec`     FLOAT NOT NULL
+        ,`ApportionedPrec`  FLOAT NOT NULL
+        ,`LowerRange`       FLOAT NULL
+        ,`UpperRange`       FLOAT NULL
     );
 
-    SELECT *
+    TRUNCATE TABLE resource_pareto_classifications;
+
+    INSERT INTO resource_pareto_classifications(
+                                                 `company_id` 
+                                                ,`scenario_id` 
+                                                ,`rank`             
+                                                ,`resource_id`      
+                                                ,`actual_quantity`  
+                                                ,`count_row_number` 
+                                                ,`rolling_prec`             
+                                                ,`key`              
+                                                ,`OriginalPrec`     
+                                                ,`ApportionedPrec`  
+                                                ,`LowerRange`       
+                                                ,`UpperRange`
+                                                )
+    SELECT 
+         CompanyID AS `company_id`
+        ,ScenarioID AS `scenario_id`
+        ,RR.`rank`             
+        ,RR.`resource_id`      
+        ,RR.`actual_quantity`  
+        ,RR.`count_row_number` 
+        ,RR.`rolling_prec`
+        ,PS.`key`              
+        ,PS.`OriginalPrec`     
+        ,PS.`ApportionedPrec`  
+        ,PS.`LowerRange`       
+        ,PS.`UpperRange`       
     FROM temp_resource_actual_quantity_rank RR
     INNER JOIN temp_Perc_Split PS
-        ON RR.prec BETWEEN PS.`LowerRange` AND PS.`UpperRange`;
+        ON RR.rolling_prec BETWEEN PS.`LowerRange` AND PS.`UpperRange`;
+    
 
 END //
 DELIMITER ;
