@@ -32,7 +32,7 @@ BEGIN
     LEFT JOIN  `scenario_values` SV
         ON SV.`scenario_option_id` = SO.`id`
         AND SV.`scenario_id` = ScenarioID
-    WHERE SO.`option_name` = 'Set Service Level By Pareto'
+    WHERE SO.`option_name` = 'Calculate Pareto Classification'
     LIMIT 1;
 
     CREATE TEMPORARY TABLE IF NOT EXISTS `temp_JSON_Key_Value_Split`
@@ -41,6 +41,8 @@ BEGIN
         ,`value`    VARCHAR(250) NOT NULL
     );
 
+    TRUNCATE TABLE `temp_JSON_Key_Value_Split`;
+    
     CALL JSON_Key_Value_Split(json);
     
     SELECT 
@@ -103,7 +105,7 @@ BEGIN
             ,`value` / Sum_Prec AS ApportionedPrec
         FROM temp_JSON_Key_Value_Split
         WHERE `key` NOT IN ('StartDate','EndDate')
-        ORDER BY `value` / Sum_Prec
+        ORDER BY (`value` / Sum_Prec), `key`DESC
     );
 
     CREATE TEMPORARY TABLE IF NOT EXISTS `temp_Perc_Split`
@@ -121,40 +123,27 @@ BEGIN
     FROM temp_Perc;
 
     WHILE `_counter` < Count_Perc DO
-        
-        IF `_counter` = 0 THEN
 
-            INSERT INTO `temp_Perc_Split` (`key`,`OriginalPrec`,`ApportionedPrec`,`LowerRange`,`UpperRange`)
-            SELECT 
-                 `key`
-                ,`OriginalPrec`
-                ,`ApportionedPrec`
-                ,0 as `LowerRange`
-                ,`ApportionedPrec` AS `UpperRange`
-            FROM temp_Perc
-            LIMIT 1;
-
-        ELSE
-
-            INSERT INTO `temp_Perc_Split` (`key`,`OriginalPrec`,`ApportionedPrec`,`LowerRange`,`UpperRange`)
-            SELECT 
-                 `key`
-                ,`OriginalPrec`
-                ,`ApportionedPrec`
-                ,UpperRange as `LowerRange`
-                ,UpperRange + `ApportionedPrec` AS `UpperRange`
-            FROM temp_Perc
-            LIMIT 1;
-
-        END IF;
+        INSERT INTO `temp_Perc_Split` (`key`,`OriginalPrec`,`ApportionedPrec`,`LowerRange`,`UpperRange`)
+        SELECT 
+                `key`
+            ,`OriginalPrec`
+            ,`ApportionedPrec`
+            ,UpperRange as `LowerRange`
+            ,UpperRange + `ApportionedPrec` AS `UpperRange`
+        FROM temp_Perc
+        ORDER BY `ApportionedPrec`, `key`DESC
+        LIMIT 1;
 
         SELECT UpperRange + `ApportionedPrec`
         INTO UpperRange
         FROM temp_Perc
+        ORDER BY `ApportionedPrec`, `key`DESC
         LIMIT 1;
         
         DELETE
         FROM temp_Perc
+        ORDER BY `ApportionedPrec`, `key`DESC
         LIMIT 1;
 
         SET `_counter` := `_counter` + 1;
@@ -246,7 +235,8 @@ BEGIN
         ,PS.`UpperRange`       
     FROM temp_resource_actual_quantity_rank RR
     INNER JOIN temp_Perc_Split PS
-        ON RR.rolling_prec BETWEEN PS.`LowerRange` AND PS.`UpperRange`;
+        ON  RR.rolling_prec > PS.`LowerRange` 
+        AND RR.rolling_prec <= PS.`UpperRange`;
     
 
 END //
